@@ -1,12 +1,22 @@
+#
+# Cookbook Name:: ceph-cluster
+# Recipe:: default
+#
+# Copyright 2015, YOUR_COMPANY_NAME
+#
+#
 include_recipe "ceph-cluster::default"
 
 mon_hostnames = []
 mon_ipaddrs = []
 mons = node['ceph']['topology']['mons']
-mons.each do |value|
-  mon_hostnames << value['hostname']
-  mon_ipaddrs << value['ipaddr']
+if mons != nil
+  mons.each do |value|
+    mon_hostnames << value['hostname']
+    mon_ipaddrs << value['ipaddr']
+  end
 end
+
 mon_hostnames << node['ceph']['topology']['mon_bootstrap']['hostname']
 mon_ipaddrs << node['ceph']['topology']['mon_bootstrap']['ipaddr']
 

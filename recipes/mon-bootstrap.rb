@@ -16,6 +16,7 @@ if mons != nil
     mon_ipaddrs << value['ipaddr']
   end
 end
+
 mon_hostnames << node['ceph']['topology']['mon_bootstrap']['hostname']
 mon_ipaddrs << node['ceph']['topology']['mon_bootstrap']['ipaddr']
 
