@@ -20,6 +20,8 @@ end
 mon_hostnames << node['ceph']['topology']['mon_bootstrap']['hostname']
 mon_ipaddrs << node['ceph']['topology']['mon_bootstrap']['ipaddr']
 
+osd_num = 1
+
 ruby_block "Get-Init-Mons" do
   block do
     node.set['ceph']['config']['topology']['mons']['hostnames'] = mon_hostnames
@@ -30,42 +32,59 @@ ruby_block "Get-Init-Mons" do
   end
 end
 
-ruby_block "Get-Init-Mons" do
-  block do
-    Chef::Log.info "#{mons}"
-    Chef::Log.info "mon_initial_members: #{node['ceph']['config']['mon_initial_members']}"
-    Chef::Log.info "#{node['ceph']['config']['topology']['mons']['hostnames'].join(",")}"
-  end
-end
-
 ruby_block "retrieve-keyring-temp" do
   block do
     CephCluster::DataHelper.retrieve_keyring_temp(node)
-
     CephCluster::DataHelper.retrieve_keyring_data(node)
-
     CephCluster::DataHelper.retrieve_config_data(node)
   end
 end
 
 ruby_block "Get-OSD-Num" do
   block do
-    osd_num = Mixlib::ShellOut.new("ceph osd create").run_command.stdout.strip
-    node.run_state['ceph_osd_num'] = osd_num
-
-    Mixlib::ShellOut.new("mkdir /dev/osd#{osd_num}").run_command.stdout.strip
-    Mixlib::ShellOut.new("mkdir /var/lib/ceph/osd/ceph-#{osd_num}").run_command.stdout.strip
-    Mixlib::ShellOut.new("ceph-osd -i #{osd_num} --mkfs --mkkey").run_command.stdout.strip
-    Mixlib::ShellOut.new("ceph auth add osd.#{osd_num} osd 'allow *' mon 'allow rwx' -i /var/lib/ceph/osd/ceph-#{osd_num}/keyring").run_command.stdout.strip
-    Mixlib::ShellOut.new("touch /var/lib/ceph/osd/ceph-#{osd_num}/sysvinit").run_command.stdout.strip
+    osds = node['ceph']['topology']['osds']
+    if osds != nil
+      osds.each do |osd|
+        if osd['hostname'] == node['hostname'] # hostname comparison
+          Chef::Log.info "looping: #{osd}"
+          drives = osd['drive']
+          if drives != nil
+            drives.each do |drive|
+              mount_point = ""
+              mount_point = Mixlib::ShellOut.new("mount | grep #{drive}").run_command.stdout.strip
+              if File.exists?("#{drive}") && mount_point == ""
+                Chef::Log.info "found osd drive: #{drive}. Will construct filesystem and mount."
+                Mixlib::ShellOut.new("mkfs -t xfs -f #{drive}").run_command.stdout.strip
+                osd_id = Mixlib::ShellOut.new("ceph osd create").run_command.stdout.strip
+                Mixlib::ShellOut.new("mkdir /var/lib/ceph/osd/ceph-#{osd_id}").run_command.stdout.strip
+                Mixlib::ShellOut.new("mount #{drive} /var/lib/ceph/osd/ceph-#{osd_id}").run_command.stdout.strip
+                CephCluster::DataHelper.add_osd(node, osd_id)
+              else
+                Chef::Log.info "#{drive} is mounted or does not exist anymore. Keep calm and call Batman."
+              end
+            end
+          else # drives != nil
+            Chef::Log.info "No drive found! OS directory will be used."
+            cmd = "service ceph status | grep -v '==' | cut -f 1 -d ':' | wc -l"
+            running_osds = Mixlib::ShellOut.new(cmd).run_command.stdout.strip
+            if osd['osd_num'] != nil && osd['osd_num'].to_i > 1
+              osd_num = osd['osd_num'].to_i
+            end
+            Chef::Log.info "number of OSDs required: #{osd_num}"
+            while running_osds.to_i < osd_num do
+              Chef::Log.info "OSD found #{running_osds}. OSD required: #{osd_num}. Creating OSD on OS drive."
+              osd_id = Mixlib::ShellOut.new("ceph osd create").run_command.stdout.strip
+              Mixlib::ShellOut.new("mkdir /var/lib/ceph/osd/ceph-#{osd_id}").run_command.stdout.strip
+              CephCluster::DataHelper.add_osd(node, osd_id)
+              running_osds = Mixlib::ShellOut.new(cmd).run_command.stdout.strip
+            end
+          end # drives != nil
+        end # hostname comparison
+      end # osds.each
+    end # osds != nil
   end
   only_if { ::File.exists?("/etc/ceph/ceph.conf") }
-end
-
-ruby_block "Print-OSD-Num" do
-  block do
-    Chef::Log.info "Print-OSD-Num: #{node.run_state['ceph_osd_num']}"
-  end
+  notifies :reload, 'service[ceph]', :immediately
 end
 
 service "ceph" do

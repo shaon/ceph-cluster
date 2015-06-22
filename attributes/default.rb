@@ -11,6 +11,8 @@ default["ceph"]["config"]["osd_pool_default_pg_num"] = 128
 default["ceph"]["config"]["osd_pool_default_pgp_num"] = 128
 default["ceph"]["config"]["osd_pool_default_size"] = 2
 
+default['ceph']['ntp_server'] = "pool.ntp.org"
+
 default['ceph']['keyring']['if_mon_secret'] = false
 
 default['ceph']['config']['topology']['mons']['hostnames'] = []

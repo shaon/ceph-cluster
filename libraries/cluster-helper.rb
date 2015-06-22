@@ -2,6 +2,14 @@ module CephCluster
   module DataHelper
 
 
+    def self.add_osd(node, osd_id)
+      Chef::Log.info "Adding ceph osd."
+      Mixlib::ShellOut.new("ceph-osd -i #{osd_id} --mkfs --mkkey").run_command.stdout.strip
+      Mixlib::ShellOut.new("ceph auth add osd.#{osd_id} osd 'allow *' mon 'allow rwx' -i /var/lib/ceph/osd/ceph-#{osd_id}/keyring").run_command.stdout.strip
+      Mixlib::ShellOut.new("touch /var/lib/ceph/osd/ceph-#{osd_id}/sysvinit").run_command.stdout.strip
+    end
+
+
     def self.save_config_data(node)
       Chef::Log.info "Saving ceph.conf data"
       if File.exists?("/etc/ceph/ceph.conf")
@@ -15,7 +23,6 @@ module CephCluster
       mon_bootstrap = node['ceph']['topology']['mon_bootstrap']['ipaddr']
       environment = node.chef_environment
       file_name = "/etc/ceph/ceph.conf"
-      Chef::Log.info "Getting all attributes from #{mon_bootstrap}"
       bootstrap_node = Chef::Search::Query.new.search(:node, "addresses:#{mon_bootstrap}").first.first
       config_data = bootstrap_node.attributes['ceph']['config']['conf_data']
       File.open(file_name, 'w') do |file|
@@ -36,7 +43,6 @@ module CephCluster
       mon_bootstrap = node['ceph']['topology']['mon_bootstrap']['ipaddr']
       environment = node.chef_environment
       file_name = "/tmp/ceph.mon.keyring"
-      Chef::Log.info "Getting all attributes from #{mon_bootstrap}"
       bootstrap_node = Chef::Search::Query.new.search(:node, "addresses:#{mon_bootstrap}").first.first
       keyring_temp = bootstrap_node.attributes['ceph']['config']['keyring_temp']
       File.open(file_name, 'w') do |file|
@@ -57,7 +63,6 @@ module CephCluster
       mon_bootstrap = node['ceph']['topology']['mon_bootstrap']['ipaddr']
       environment = node.chef_environment
       file_name = "/etc/ceph/ceph.client.admin.keyring"
-      Chef::Log.info "Getting all attributes from #{mon_bootstrap}"
       bootstrap_node = Chef::Search::Query.new.search(:node, "addresses:#{mon_bootstrap}").first.first
       keyring_data = bootstrap_node.attributes['ceph']['config']['keyring_data']
       File.open(file_name, 'w') do |file|
