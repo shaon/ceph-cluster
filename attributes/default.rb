@@ -1,5 +1,5 @@
 # default['ceph']['config']['fsid'] = nil
-
+default['ceph']['config']['bind-interface'] = 'eth0'
 default['ceph']['config']['mon_initial_members'] = ""
 default['ceph']['config']['mon_host'] = ""
 default['ceph']['config']['mon_port'] = 6789
