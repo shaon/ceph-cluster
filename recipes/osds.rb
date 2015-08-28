@@ -52,33 +52,20 @@ ruby_block "Get-OSD-Num" do
             drives.each do |drive|
               mount_point = ""
               mount_point = Mixlib::ShellOut.new("mount | grep #{drive}").run_command.stdout.strip
-              if File.exists?("#{drive}") && mount_point == ""
+              if File.exists?("#{drive}") && mount_point !~ /ceph/
                 Chef::Log.info "found osd drive: #{drive}. Will construct filesystem and mount."
+		Mixlib::ShellOut.new("umount #{drive}").run_command.stdout.strip
                 Mixlib::ShellOut.new("mkfs -t xfs -f #{drive}").run_command.stdout.strip
-                osd_id = Mixlib::ShellOut.new("ceph osd create").run_command.stdout.strip
-                Mixlib::ShellOut.new("mkdir /var/lib/ceph/osd/ceph-#{osd_id}").run_command.stdout.strip
-                Mixlib::ShellOut.new("mount #{drive} /var/lib/ceph/osd/ceph-#{osd_id}").run_command.stdout.strip
-                CephCluster::DataHelper.add_osd(node, osd_id)
+                Mixlib::ShellOut.new("mount #{drive} /var/lib/ceph/osd/").run_command.stdout.strip
+                Mixlib::ShellOut.new("sed -i \"s[#{drive} *.* *defaults *1 *2[#{drive} /var/lib/ceph/osd/ xfs defaults 1 2[\" /etc/fstab").run_command.stdout.strip
               else
                 Chef::Log.info "#{drive} is mounted or does not exist anymore. Keep calm and call Batman."
               end
             end
-          else # drives != nil
-            Chef::Log.info "No drive found! OS directory will be used."
-            cmd = "service ceph status | grep -v '==' | cut -f 1 -d ':' | wc -l"
-            running_osds = Mixlib::ShellOut.new(cmd).run_command.stdout.strip
-            if osd['osd_num'] != nil && osd['osd_num'].to_i > 1
-              osd_num = osd['osd_num'].to_i
-            end
-            Chef::Log.info "number of OSDs required: #{osd_num}"
-            while running_osds.to_i < osd_num do
-              Chef::Log.info "OSD found #{running_osds}. OSD required: #{osd_num}. Creating OSD on OS drive."
+          end # drives != nil
               osd_id = Mixlib::ShellOut.new("ceph osd create").run_command.stdout.strip
               Mixlib::ShellOut.new("mkdir /var/lib/ceph/osd/ceph-#{osd_id}").run_command.stdout.strip
               CephCluster::DataHelper.add_osd(node, osd_id)
-              running_osds = Mixlib::ShellOut.new(cmd).run_command.stdout.strip
-            end
-          end # drives != nil
         end # hostname comparison
       end # osds.each
     end # osds != nil
