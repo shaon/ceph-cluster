@@ -56,8 +56,11 @@ ruby_block "retrieve-config-data" do
   end
 end
 
+bind_interface = node['ceph']['config']['bind-interface']
+bind_address = node[:network][:interfaces][bind_interface][:addresses].find {|addr, addr_info| addr_info[:family] == "inet"}.first
+
 execute "monmap tool on node" do
-  command "monmaptool --create --add #{node['hostname']} #{node['ipaddress']} --fsid #{node['ceph']['config']['fsid']} /tmp/monmap --clobber"
+  command "monmaptool --create --add #{node['hostname']} #{bind_address} --fsid #{node['ceph']['config']['fsid']} /tmp/monmap --clobber"
 end
 
 ##
@@ -66,7 +69,7 @@ fsid = node['ceph']['config']['fsid']
 c_mkfs = "ceph-mon --mkfs"
 
 execute "mkfs-on-node" do
-  command "#{c_mkfs} -i #{node['hostname']} --fsid #{fsid} --keyring #{keyring} --public-addr #{node['ipaddress']} --mon-host #{mon_hostnames.join(",")}"
+  command "#{c_mkfs} -i #{node['hostname']} --fsid #{fsid} --keyring #{keyring} --public-addr #{bind_address} --mon-host #{mon_hostnames.join(",")}"
   not_if { ::File.exist?("/var/lib/ceph/mon/ceph-#{node['hostname']}") }
 end
 

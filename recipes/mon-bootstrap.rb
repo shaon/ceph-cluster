@@ -57,8 +57,11 @@ execute "Add the client.admin key to the ceph.mon.keyring" do
   # not_if { ::File.exists?("/etc/ceph/ceph.client.admin.keyring")}
 end
 
+bind_interface = node['ceph']['config']['bind-interface']
+bind_address = node[:network][:interfaces][bind_interface][:addresses].find {|addr, addr_info| addr_info[:family] == "inet"}.first
+
 execute "Generate a monitor map" do
-  command "monmaptool --create --add #{node['hostname']} #{node['ipaddress']} --fsid #{node['ceph']['config']['fsid']} /tmp/monmap --clobber"
+  command "monmaptool --create --add #{node['hostname']} #{bind_address} --fsid #{node['ceph']['config']['fsid']} /tmp/monmap --clobber"
   not_if { ::File.exists?("/tmp/monmap")}
 end
 
