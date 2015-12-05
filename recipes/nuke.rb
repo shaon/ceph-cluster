@@ -19,13 +19,23 @@ yum_package "xfsprogs" do
   ignore_failure true
 end
 
-execute "remove-all-ceph-packages" do
-  command "for x in `rpm -qa | grep ceph`; do rpm -e $x; done"
+yum_package "ceph-common" do
+  action :remove
+  ignore_failure true
+end
+
+yum_package "python-ceph" do
+  action :remove
+  ignore_failure true
+end
+
+yum_package "libcephfs1" do
+  action :remove
   ignore_failure true
 end
 
 execute "remove-all-ceph-artifacts" do
-  command "for x in `find / -name 'ceph'`; do rm -rf $x; done"
+  command "rm -rf /usr/share/ceph /var/lib/ceph"
   ignore_failure true
 end
 
