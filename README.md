@@ -1,55 +1,13 @@
 ceph-cluster Cookbook
 =====================
-TODO: Enter the cookbook description here.
 
-e.g.
-This cookbook makes your favorite breakfast sandwich.
+ceph-cluster cookbook for RHEL/CentOS.
+
 
 Requirements
 ------------
-TODO: List your cookbook requirements. Be sure to include any requirements this cookbook has on platforms, libraries, other cookbooks, packages, operating systems, etc.
+Use with Calyptos: https://github.com/eucalyptus/calyptos
 
-e.g.
-#### packages
-- `toaster` - ceph-cluster needs toaster to brown your bagel.
-
-Attributes
-----------
-TODO: List your cookbook attributes here.
-
-e.g.
-#### ceph-cluster::default
-<table>
-  <tr>
-    <th>Key</th>
-    <th>Type</th>
-    <th>Description</th>
-    <th>Default</th>
-  </tr>
-  <tr>
-    <td><tt>['ceph-cluster']['bacon']</tt></td>
-    <td>Boolean</td>
-    <td>whether to include bacon</td>
-    <td><tt>true</tt></td>
-  </tr>
-</table>
-
-Usage
------
-#### ceph-cluster::default
-TODO: Write usage instructions for each cookbook.
-
-e.g.
-Just include `ceph-cluster` in your node's `run_list`:
-
-```json
-{
-  "name":"my_node",
-  "run_list": [
-    "recipe[ceph-cluster]"
-  ]
-}
-```
 
 Contributing
 ------------
@@ -65,4 +23,5 @@ e.g.
 
 License and Authors
 -------------------
-Authors: TODO: List authors
+* Imran Hossain Shaon (mdshaonimran@gmail.com)
+* Vic Iglesias (viglesiasce@gmail.com)

@@ -1,8 +1,7 @@
 [client.admin]
-<% if node['ceph']['keyring']['monitor_secret'] -%>
-  key = <%= node['ceph']['keyring']['monitor_secret'] %>
+<% if node['ceph']['client-admin-key'] -%>
+  key = <%= node['ceph']['client-admin-key'] %>
 <% end -%>
-	auid = 0
-	caps mds = "allow"
-	caps mon = "allow *"
-	caps osd = "allow *"
+  caps mds = "allow"
+  caps mon = "allow *"
+  caps osd = "allow *"

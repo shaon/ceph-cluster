@@ -2,30 +2,40 @@
 <% unless node['ceph']['config']['fsid'].nil? -%>
   fsid = <%= node['ceph']['config']['fsid'] %>
 <% end -%>
-<% if node["ceph"]['config']['topology']['mons'] -%>
-  mon initial members = <%= node['ceph']['config']['topology']['mons']['hostnames'].join(",") %>
+<% if node['ceph']['config']['initial_members'] -%>
+  mon initial members = <%= node['ceph']['config']['initial_members'].join(',') %>
 <% end -%>
-<% if node["ceph"]['config']['topology']['mons'] -%>
-  mon host = <%= node['ceph']['config']['topology']['mons']['ipaddrs'].join(",") %>
+<% if node['ceph']['config']['initial_host'] -%>
+  mon host = <%= node['ceph']['config']['initial_host'].join(',') %>
 <% end -%>
-<% if node["ceph"]["config"]["auth_cluster_required"] -%>
-  auth_cluster_required = <%= node["ceph"]["config"]["auth_cluster_required"] %>
+<% if node['ceph']['config']['public_network'] -%>
+  public network = <%= node['ceph']['config']['public_network'] %>
 <% end -%>
-<% if node["ceph"]["config"]["auth_client_required"] -%>
-  auth_client_required = <%= node["ceph"]["config"]["auth_client_required"] %>
+<% if node['ceph']['config']['auth_cluster_required'] -%>
+  auth_cluster_required = <%= node['ceph']['config']['auth_cluster_required'] %>
 <% end -%>
-<% if node["ceph"]["config"]["auth_service_required"] -%>
-  auth service required = <%= node["ceph"]["config"]["auth_service_required"] %>
+<% if node['ceph']['config']['auth_client_required'] -%>
+  auth_client_required = <%= node['ceph']['config']['auth_client_required'] %>
 <% end -%>
-<% if node["ceph"]["config"]["filestore_xattr_use_omap"] -%>
-  filestore_xattr_use_omap = <%= node["ceph"]["config"]["filestore_xattr_use_omap"] %>
+<% if node['ceph']['config']['auth_service_required'] -%>
+  auth service required = <%= node['ceph']['config']['auth_service_required'] %>
 <% end -%>
-<% if node["ceph"]["config"]["osd_pool_default_pg_num"] -%>
-  osd pool default pg num = <%= node["ceph"]["config"]["osd_pool_default_pg_num"] %>
+<% if node['ceph']['config']['filestore_xattr_use_omap'] -%>
+  filestore_xattr_use_omap = <%= node['ceph']['config']['filestore_xattr_use_omap'] %>
 <% end -%>
-<% if node["ceph"]["config"]["osd_pool_default_pgp_num"] -%>
-  osd pool default pgp num = <%= node["ceph"]["config"]["osd_pool_default_pgp_num"] %>
+<% if node['ceph']['config']['osd_pool_default_pg_num'] -%>
+  osd pool default pg num = <%= node['ceph']['config']['osd_pool_default_pg_num'] %>
 <% end -%>
-<% if node["ceph"]["config"]["osd_pool_default_size"] -%>
-  osd pool default size = <%= node["ceph"]["config"]["osd_pool_default_size"] %>
+<% if node['ceph']['config']['osd_pool_default_pgp_num'] -%>
+  osd pool default pgp num = <%= node['ceph']['config']['osd_pool_default_pgp_num'] %>
 <% end -%>
+<% if node['ceph']['config']['osd_pool_default_size'] -%>
+  osd pool default size = <%= node['ceph']['config']['osd_pool_default_size'] %>
+<% end -%>
+<% if node['ceph']['topology']['mons'] -%>
+  <% node['ceph']['topology']['mons'].each do |mon| -%>
+[mon.<%= mon['hostname'] %>]
+  host = <%= mon['hostname'] %>
+  addr = <%= mon['ipaddr'] %>
+  <% end %>
+<% end %>

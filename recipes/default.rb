@@ -2,26 +2,19 @@
 # Cookbook Name:: ceph-cluster
 # Recipe:: default
 #
-# Copyright 2015, YOUR_COMPANY_NAME
+# Copyright 2016
 #
-#
+
 include_recipe "ntp::default"
 
-yum_package "ceph" do
-  action :upgrade
-  flush_cache [:before]
-end
-
-yum_package "ceph-radosgw" do
-  action :upgrade
-  flush_cache [:before]
-end
-
-yum_package "xfsprogs" do
-  action :upgrade
-  flush_cache [:before]
+%w{ceph ceph-radosgw xfsprogs}.each do |pkg|
+  yum_package pkg do
+    action :upgrade
+    flush_cache [:before]
+  end
 end
 
 execute "update-ntpdate" do
   command "ntpdate -u #{node['ceph']['ntp_server']}"
+  action :run
 end
