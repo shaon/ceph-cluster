@@ -36,6 +36,6 @@
   <% node['ceph']['topology']['mons'].each do |mon| -%>
 [mon.<%= mon['hostname'] %>]
   host = <%= mon['hostname'] %>
-  addr = <%= mon['ipaddr'] %>
+  mon addr = <%= mon['ipaddr'] %>:<%= node['ceph']['config']['mon_port'] %>
   <% end %>
 <% end %>
