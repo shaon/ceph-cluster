@@ -9,9 +9,9 @@ def add_user(node, username, poolname)
   n = "client.#{username}"
 
   if poolname == nil
-    Mixlib::ShellOut.new("ceph auth add #{n} mon 'allow r' osd 'allow rw'").run_command.stdout
+    Mixlib::ShellOut.new("ceph auth add #{n} mon 'allow r' osd 'allow rwx'").run_command.stdout
   else
-    Mixlib::ShellOut.new("ceph auth add #{n} mon 'allow r' osd 'allow rw pool=#{poolname}'").run_command.stdout
+    Mixlib::ShellOut.new("ceph auth add #{n} mon 'allow r' osd 'allow rwx pool=#{poolname}'").run_command.stdout
   end
   Mixlib::ShellOut.new("ceph auth get #{n} -o /etc/ceph/ceph.#{n}.keyring").run_command.stdout
 end
