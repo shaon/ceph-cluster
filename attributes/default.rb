@@ -12,9 +12,13 @@ default["ceph"]["config"]["auth_cluster_required"] = "cephx"
 default["ceph"]["config"]["auth_service_required"] = "cephx"
 default["ceph"]["config"]["auth_client_required"] = "cephx"
 default["ceph"]["config"]["filestore_xattr_use_omap"] = true
-default["ceph"]["config"]["osd_pool_default_pg_num"] = 128
-default["ceph"]["config"]["osd_pool_default_pgp_num"] = 128
-default["ceph"]["config"]["osd_pool_default_size"] = 2
+default["ceph"]["config"]["osd-pool-default-pg-num"] = 128
+default["ceph"]["config"]["osd-pool-default-pgp-num"] = 128
+default["ceph"]["config"]["osd-pool-default-size"] = 3
+default["ceph"]["config"]["osd-pool-default-min-size"] = 1
+default["ceph"]["config"]["osd-journal-size"] = 5120
+
+default["ceph"]["system-properties"]["journal-path"] = nil
 
 default['ceph']['ntp_server'] = "pool.ntp.org"
 

@@ -5,6 +5,12 @@
 # Copyright 2016
 #
 
+def execute_command(cmd)
+  Chef::Log.info "executing: #{cmd}"
+  result = Mixlib::ShellOut.new(cmd).run_command.stdout.strip
+  return result
+end
+
 def gather_mons(node, mons)
   mons.each do |value|
     if value['init'] == true
@@ -28,6 +34,23 @@ def mon_secret
     end
   end
   mon_secret
+end
+
+def osd_secret
+  mons = node['ceph']['topology']['mons']
+  osd_secret = nil
+  mons.each do |value|
+    found = Chef::Search::Query.new.search(:node, "addresses:#{value['ipaddr']}").first.first
+    if found.attributes['ceph']['osd-bootstrap-key']
+      osd_secret = found.attributes['ceph']['osd-bootstrap-key']
+      break
+    end
+  end
+  if osd_secret == ""
+    return nil
+  else
+    return osd_secret
+  end
 end
 
 def admin_secret
@@ -84,6 +107,7 @@ def osd_drive_allowed(drive)
   osd_status = node['ceph']['status']
   Chef::Log.info "#{osd_status}"
   status = get_drive_status(drive)
+  Chef::Log.info "status[:is_drive]: #{status[:is_drive]}, status[:is_mounted]: #{status[:is_mounted]}"
 
   status[:is_drive] && status[:is_mounted]
 end
@@ -99,7 +123,7 @@ end
 
 def user_exists(username)
   user = get_user(username)
-  Chef::Log.debug "#{user}"
+  Chef::Log.info "#{user}"
   return user[:status]
 end
 
@@ -117,10 +141,10 @@ def write_data_to_file(node, filename, attribute)
   environment = node.chef_environment
   data = nil
   mons.each do |mon|
-    Chef::Log.debug "trying: #{mon}"
+    Chef::Log.info "trying: #{mon}"
     found = Chef::Search::Query.new.search(:node, "addresses:#{mon['ipaddr']}").first.first
     if found.attributes['ceph'][attribute]
-      Chef::Log.debug "found: #{found}"
+      Chef::Log.info "found: #{found}"
       data = found.attributes['ceph'][attribute]
       break
     end
@@ -136,10 +160,10 @@ def download_user_keyring(node, username)
   file_name = "/root/ceph.client.#{username}.keyring"
   keyring_data = nil
   mons.each do |mon|
-    Chef::Log.debug "trying: #{mon}"
+    Chef::Log.info "trying: #{mon}"
     found = Chef::Search::Query.new.search(:node, "addresses:#{mon['ipaddr']}").first.first
     if found != nil
-      Chef::Log.debug "found: #{found}"
+      Chef::Log.info "found: #{found}"
       keyring_data = found.attributes['ceph']['keyring_data'][username]
       break
     end

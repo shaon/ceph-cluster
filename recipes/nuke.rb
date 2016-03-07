@@ -11,6 +11,36 @@ service "ceph" do
   only_if do ::File.exists?('/etc/init.d/ceph') end
 end
 
+osds = node['ceph']['topology']['osds']
+
+osds.each do |osd|
+
+  if osd['hostname'] == node['hostname']
+    if osd['journal-path']
+      execute "remove-all-ceph-artifacts" do
+        command "parted -s -a optimal #{osd['journal-path']} mklabel msdos"
+        ignore_failure true
+      end
+    end
+    osd['drives'].each do |osd_drive|
+      execute "remove-all-ceph-artifacts" do
+        command "umount #{osd_drive['disk']}1"
+        ignore_failure true
+      end
+      execute "remove-all-ceph-artifacts" do
+        command "ceph-disk zap #{osd_drive['disk']}"
+        ignore_failure true
+      end
+      execute "remove-all-ceph-artifacts" do
+        command "parted -s -a optimal #{osd_drive['disk']} mklabel msdos"
+        ignore_failure true
+      end
+    end
+    break
+  end
+  
+end
+
 %w{ceph ceph-radosgw xfsprogs ceph-common python-ceph libcephfs1}.each do |pkg|
   package pkg do
     action :remove

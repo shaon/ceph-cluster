@@ -8,8 +8,8 @@
 <% if node['ceph']['config']['initial_host'] -%>
   mon host = <%= node['ceph']['config']['initial_host'].join(',') %>
 <% end -%>
-<% if node['ceph']['config']['public_network'] -%>
-  public network = <%= node['ceph']['config']['public_network'] %>
+<% if node['ceph']['config']['public-network'] -%>
+  public network = <%= node['ceph']['config']['public-network'] %>
 <% end -%>
 <% if node['ceph']['config']['auth_cluster_required'] -%>
   auth_cluster_required = <%= node['ceph']['config']['auth_cluster_required'] %>
@@ -23,14 +23,20 @@
 <% if node['ceph']['config']['filestore_xattr_use_omap'] -%>
   filestore_xattr_use_omap = <%= node['ceph']['config']['filestore_xattr_use_omap'] %>
 <% end -%>
-<% if node['ceph']['config']['osd_pool_default_pg_num'] -%>
-  osd pool default pg num = <%= node['ceph']['config']['osd_pool_default_pg_num'] %>
+<% if node['ceph']['config']['osd-pool-default-pg-num'] -%>
+  osd pool default pg num = <%= node['ceph']['config']['osd-pool-default-pg-num'] %>
 <% end -%>
-<% if node['ceph']['config']['osd_pool_default_pgp_num'] -%>
-  osd pool default pgp num = <%= node['ceph']['config']['osd_pool_default_pgp_num'] %>
+<% if node['ceph']['config']['osd-pool-default-pgp-num'] -%>
+  osd pool default pgp num = <%= node['ceph']['config']['osd-pool-default-pgp-num'] %>
 <% end -%>
-<% if node['ceph']['config']['osd_pool_default_size'] -%>
-  osd pool default size = <%= node['ceph']['config']['osd_pool_default_size'] %>
+<% if node['ceph']['config']['osd-pool-default-size'] -%>
+  osd pool default size = <%= node['ceph']['config']['osd-pool-default-size'] %>
+<% end -%>
+<% if node['ceph']['config']['osd-pool-default-min-size'] -%>
+  osd pool default size = <%= node['ceph']['config']['osd-pool-default-min-size'] %>
+<% end -%>
+<% if node['ceph']['config']['osd-journal-size'] -%>
+  osd journal size = <%= node['ceph']['config']['osd-journal-size'] %>
 <% end -%>
 <% if node['ceph']['topology']['mons'] -%>
   <% node['ceph']['topology']['mons'].each do |mon| -%>
