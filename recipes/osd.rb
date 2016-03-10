@@ -58,19 +58,25 @@ if osds != nil
   if this_osd['drives']
 
     this_osd['drives'].each do |osd_drive|
+      unless osd_drive['disk']['status']
+        node.set['ceph']['osd_drives']["#{osd_drive['disk']}"]['status'] = 'premordial'
+        node.save
+      end
 
-      ceph_cluster_builder "add osd drives" do
-        component "osd"
-        osd_type "drive"
-        journal_path this_osd['journal-path']
-        drive osd_drive['disk']
-        action :add
-        notifies :create, "ruby_block[save osd status #{osd_drive['disk']}]", :immediately
+      if node['ceph']['osd_drives']["#{osd_drive['disk']}"]['status'] != 'deployed'
+        ceph_cluster_builder "add osd drives" do
+          component "osd"
+          osd_type "drive"
+          journal_path this_osd['journal-path']
+          drive osd_drive['disk']
+          action :add
+          notifies :create, "ruby_block[save osd status #{osd_drive['disk']}]", :immediately
+        end
       end
 
       ruby_block "save osd status #{osd_drive['disk']}" do
         block do
-          node.set['ceph']["#{osd_drive['disk']}"]['status'] = "deployed"
+          node.set['ceph']['osd_drives']["#{osd_drive['disk']}"]['status'] = "deployed"
           node.save
         end
         action :nothing

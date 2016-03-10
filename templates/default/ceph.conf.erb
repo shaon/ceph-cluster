@@ -11,6 +11,9 @@
 <% if node['ceph']['config']['public-network'] -%>
   public network = <%= node['ceph']['config']['public-network'] %>
 <% end -%>
+<% if node['ceph']['config']['cluster-network'] -%>
+  cluster network = <%= node['ceph']['config']['cluster-network'] %>
+<% end -%>
 <% if node['ceph']['config']['auth_cluster_required'] -%>
   auth_cluster_required = <%= node['ceph']['config']['auth_cluster_required'] %>
 <% end -%>
@@ -33,7 +36,7 @@
   osd pool default size = <%= node['ceph']['config']['osd-pool-default-size'] %>
 <% end -%>
 <% if node['ceph']['config']['osd-pool-default-min-size'] -%>
-  osd pool default size = <%= node['ceph']['config']['osd-pool-default-min-size'] %>
+  osd pool default min size = <%= node['ceph']['config']['osd-pool-default-min-size'] %>
 <% end -%>
 <% if node['ceph']['config']['osd-journal-size'] -%>
   osd journal size = <%= node['ceph']['config']['osd-journal-size'] %>
