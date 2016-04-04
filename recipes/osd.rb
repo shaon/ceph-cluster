@@ -7,6 +7,11 @@
 
 include_recipe "ceph-cluster::default"
 
+yum_package "ceph-osd" do
+  action :upgrade
+  flush_cache [:before]
+end
+
 mons = node['ceph']['topology']['mons']
 if mons != nil
   gather_mons(node, mons)
@@ -28,52 +33,72 @@ template "#{client_admin_keyring}" do
   only_if { admin_secret }
 end
 
+cluster = 'ceph'
+
+execute 'format bootstrap-osd as keyring' do
+  command lazy { "ceph-authtool '/var/lib/ceph/bootstrap-osd/#{cluster}.keyring' --create-keyring --name=client.bootstrap-osd --add-key='#{osd_secret}'" }
+  creates "/var/lib/ceph/bootstrap-osd/#{cluster}.keyring"
+  only_if { osd_secret }
+end
+
+
 # adding drive for osd
 osds = node['ceph']['topology']['osds']
-osd_drives = nil
-osd_fstype = nil
+this_osd = nil
+osd_journal_path = node['ceph']['system-properties']['journal-path']
 
 if osds != nil
-  osds.each do |osd|
 
-    if osd['hostname'] == node['hostname'] && osd['drives']
-      osd_drives = osd['drives']
-      osd_fstype = osd['fstype']
+  osds.each do |osd|
+    if osd['hostname'] == node['hostname']
+      this_osd = osd
       break
     end
-
   end
-end
 
-if osd_drives
-  osd_drives.each do |osd_drive|
+  # unless this_osd['journal-path']
+  #   this_osd['journal-path'] = nil
+  # end
+
+  if this_osd['drives']
+
+    this_osd['drives'].each do |osd_drive|
+      unless osd_drive['disk']['status']
+        node.set['ceph']['osd_drives']["#{osd_drive['disk']}"]['status'] = 'premordial'
+        node.save
+      end
+
+      if node['ceph']['osd_drives']["#{osd_drive['disk']}"]['status'] != 'deployed'
+        ceph_cluster_builder "add osd drives" do
+          component "osd"
+          osd_type "drive"
+          journal_path this_osd['journal-path']
+          drive osd_drive['disk']
+          action :add
+          notifies :create, "ruby_block[save osd status #{osd_drive['disk']}]", :immediately
+        end
+      end
+
+      ruby_block "save osd status #{osd_drive['disk']}" do
+        block do
+          node.set['ceph']['osd_drives']["#{osd_drive['disk']}"]['status'] = "deployed"
+          node.save
+        end
+        action :nothing
+      end
+
+    end
+  else
     ceph_cluster_builder "add osd" do
       component "osd"
-      osd_type "drive"
-      fstype osd_fstype
-      drive osd_drive
+      osd_type "osdrive"
       action :add
-      notifies :run, 'ruby_block[save osd status]', :delayed
-      only_if { osd_drive_allowed(osd_drive) }
+      only_if { osd_allowed }
     end
   end
-else
-  ceph_cluster_builder "add osd" do
-    component "osd"
-    osd_type "osdrive"
-    action :add
-    only_if { osd_allowed }
-    notifies :run, 'ruby_block[save osd status]', :delayed
-  end
-end
 
-ruby_block 'save osd status' do
-  block do
-    node.set['ceph']['status'] = node.default['ceph']['status']
-    node.save
-  end
-  action :nothing
-end
+end # osd != nil
+
 
 ruby_block 'save config_data' do
   block do

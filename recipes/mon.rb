@@ -7,6 +7,11 @@
 
 include_recipe "ceph-cluster::default"
 
+yum_package "ceph-mon" do
+  action :upgrade
+  flush_cache [:before]
+end
+
 mons = node['ceph']['topology']['mons']
 if mons != nil
   gather_mons(node, mons)
@@ -19,7 +24,7 @@ client_admin_keyring = '/etc/ceph/ceph.client.admin.keyring'
 template "#{ceph_conf}" do
   source 'ceph.conf.erb'
   action :create
-  notifies :restart, 'service[ceph]', :immediately
+  # notifies :restart, 'service[ceph]', :immediately
   notifies :run, 'ruby_block[save config_data]', :delayed
 end
 
@@ -82,6 +87,7 @@ execute 'ceph-mon mkfs' do
   creates ceph_dir
   notifies :create, "file[#{ceph_dir}/done]", :immediately
   notifies :create, "file[#{ceph_dir}/sysvinit]", :immediately
+  notifies :run, "ruby_block[save osd bootstrap-keyring]", :delayed
 end
 
 file "#{ceph_dir}/done" do
@@ -96,6 +102,18 @@ ruby_block 'save config_data' do
   block do
     save_data_from_file(node, ceph_conf, "config_data")
   end
+  action :nothing
+end
+
+ruby_block 'save osd bootstrap-keyring' do
+  block do
+    fetch = Mixlib::ShellOut.new('ceph auth get-key client.bootstrap-osd')
+    fetch.run_command
+    key = fetch.stdout
+    node.set['ceph']['osd-bootstrap-key'] = key
+    node.save
+  end
+  not_if { osd_secret }
   action :nothing
 end
 

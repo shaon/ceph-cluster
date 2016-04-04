@@ -5,39 +5,66 @@
 # Copyright 2016
 #
 
+def run_cmd(cmd)
+  Chef::Log.info "executing: #{cmd}"
+  result = Mixlib::ShellOut.new(cmd).run_command.stdout.strip
+  return result
+end
+
 def add_basic_osd(node, osd_id, drive)
 
-  Chef::Log.debug "executing: ceph-osd -i #{osd_id} --mkfs --mkkey"
+  Chef::Log.info "executing: ceph-osd -i #{osd_id} --mkfs --mkkey"
   Mixlib::ShellOut.new("ceph-osd -i #{osd_id} --mkfs --mkkey").run_command.stdout
-  Chef::Log.debug "executing: ceph auth add osd.#{osd_id} osd 'allow *' mon 'allow rwx' -i /var/lib/ceph/osd/ceph-#{osd_id}/keyring"
+  Chef::Log.info "executing: ceph auth add osd.#{osd_id} osd 'allow *' mon 'allow rwx' -i /var/lib/ceph/osd/ceph-#{osd_id}/keyring"
   Mixlib::ShellOut.new("ceph auth add osd.#{osd_id} osd 'allow *' mon 'allow rwx' -i /var/lib/ceph/osd/ceph-#{osd_id}/keyring").run_command.stdout
-  Chef::Log.debug "executing: touch /var/lib/ceph/osd/ceph-#{osd_id}/sysvinit"
+  Chef::Log.info "executing: touch /var/lib/ceph/osd/ceph-#{osd_id}/sysvinit"
   Mixlib::ShellOut.new("touch /var/lib/ceph/osd/ceph-#{osd_id}/sysvinit").run_command.stdout
 
   node.default['ceph']['status'] << {'component' => 'osd', 'deployed' => true, 'id' => osd_id, 'drive' => drive }
   node.save
 end
 
-def add_drive_for_osd(node, osd_id, fstype, drive)
-  # we probably should not umount on any disk, :debatable
-  # Mixlib::ShellOut.new("umount #{drive}").run_command.stdout.strip
-  Mixlib::ShellOut.new("mkfs -t #{fstype} -f #{drive}").run_command.stdout.strip
-  Mixlib::ShellOut.new("mount #{drive} /var/lib/ceph/osd/ceph-#{osd_id}").run_command.stdout.strip
-  Mixlib::ShellOut.new("sed -i \"s[#{drive} *.* *defaults *1 *2[#{drive} /var/lib/ceph/osd/ xfs defaults 1 2[\" /etc/fstab").run_command.stdout.strip
+def add_drive_for_osd(node, fstype, drive, journal_path)
+  if journal_path == nil
+    run_cmd("ceph-disk prepare --cluster ceph --fs-type #{fstype} #{drive}")
+  else
+    run_cmd("ceph-disk prepare --cluster ceph --fs-type #{fstype} #{drive} #{journal_path}")
+  end
+  run_cmd("ceph-disk activate #{drive}1")
+  # Mixlib::ShellOut.new("sed -i \"s[#{drive} *.* *defaults *1 *2[#{drive} /var/lib/ceph/osd/ xfs defaults 1 2[\" /etc/fstab").run_command.stdout.strip
 
+end
+
+def is_gpt_drive(drive)
+  Chef::Log.info "executing: partprobe -d -s #{drive} | grep gpt"
+  cmd = Mixlib::ShellOut::new("partprobe -d -s #{drive} | grep gpt")
+  cmd.run_command
+  {
+    :result => cmd.stdout =~ /gpt partitions/,
+    :output => cmd.stdout.strip,
+    :has_partition => cmd.stderr !~ /1/
+  }
 end
 
 action :add do
   if new_resource.component == "osd"
-    Chef::Log.debug "executing: ceph osd create"
-    osd_id = Mixlib::ShellOut.new("ceph osd create").run_command.stdout.strip
-    Chef::Log.debug "executing: mkdir /var/lib/ceph/osd/ceph-#{osd_id}"
-    Mixlib::ShellOut.new("mkdir /var/lib/ceph/osd/ceph-#{osd_id}").run_command.stdout
 
     if new_resource.osd_type == "drive"
-      add_drive_for_osd(node, osd_id, new_resource.fstype, new_resource.drive)
+      gpt_drive = is_gpt_drive(new_resource.drive)
+      if gpt_drive[:result] == nil || gpt_drive[:has_partition]
+        run_cmd("sgdisk --zap-all #{new_resource.drive}")
+        run_cmd("sgdisk --mbrtogpt #{new_resource.drive}")
+      end
+
+      Chef::Log.info "running: add_drive_for_osd(node, new_resource.fstype, new_resource.drive, new_resource.journal_path)"
+      add_drive_for_osd(node, new_resource.fstype, new_resource.drive, new_resource.journal_path)
+    else
+      Chef::Log.info "executing: ceph osd create"
+      osd_id = Mixlib::ShellOut.new("ceph osd create").run_command.stdout.strip
+      Chef::Log.info "executing: mkdir /var/lib/ceph/osd/ceph-#{osd_id}"
+      Mixlib::ShellOut.new("mkdir /var/lib/ceph/osd/ceph-#{osd_id}").run_command.stdout
+      add_basic_osd(node, osd_id, new_resource.drive)
     end
-    add_basic_osd(node, osd_id, new_resource.drive)
 
   elsif new_resource.component == "mon"
     Chef::Log.info "TODO: Not implemented"
