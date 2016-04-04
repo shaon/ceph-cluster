@@ -22,23 +22,27 @@ osds.each do |osd|
         ignore_failure true
       end
     end
-    osd['drives'].each do |osd_drive|
-      execute "remove-all-ceph-artifacts" do
-        command "umount #{osd_drive['disk']}1"
-        ignore_failure true
-      end
-      execute "remove-all-ceph-artifacts" do
-        command "ceph-disk zap #{osd_drive['disk']}"
-        ignore_failure true
-      end
-      execute "remove-all-ceph-artifacts" do
-        command "parted -s -a optimal #{osd_drive['disk']} mklabel msdos"
-        ignore_failure true
+
+    if osd['drives']
+      osd['drives'].each do |osd_drive|
+        execute "remove-all-ceph-artifacts" do
+          command "umount #{osd_drive['disk']}1"
+          ignore_failure true
+        end
+        execute "remove-all-ceph-artifacts" do
+          command "ceph-disk zap #{osd_drive['disk']}"
+          ignore_failure true
+        end
+        execute "remove-all-ceph-artifacts" do
+          command "parted -s -a optimal #{osd_drive['disk']} mklabel msdos"
+          ignore_failure true
+        end
       end
     end
+
     break
   end
-  
+
 end
 
 %w{ceph ceph-radosgw xfsprogs ceph-common python-ceph libcephfs1}.each do |pkg|

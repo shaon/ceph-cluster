@@ -7,6 +7,11 @@
 
 include_recipe "ceph-cluster::default"
 
+yum_package "ceph-osd" do
+  action :upgrade
+  flush_cache [:before]
+end
+
 mons = node['ceph']['topology']['mons']
 if mons != nil
   gather_mons(node, mons)
@@ -51,9 +56,9 @@ if osds != nil
     end
   end
 
-  unless this_osd['journal-path']
-    this_osd['journal-path'] = nil
-  end
+  # unless this_osd['journal-path']
+  #   this_osd['journal-path'] = nil
+  # end
 
   if this_osd['drives']
 
@@ -83,33 +88,16 @@ if osds != nil
       end
 
     end
+  else
+    ceph_cluster_builder "add osd" do
+      component "osd"
+      osd_type "osdrive"
+      action :add
+      only_if { osd_allowed }
+    end
   end
 
 end # osd != nil
-#
-# if osd_drives
-#   osd_drives.each do |osd_drive|
-#     ceph_cluster_builder "add osd drives" do
-#       component "osd"
-#       osd_type "drive"
-#       fstype osd_fstype
-#       drive osd_drive['disk']
-#       journal_path osd_drive['journal']
-#       action :add
-#       notifies :run, 'ruby_block[save osd status]', :immediately
-#       # only_if { osd_drive_allowed(osd_drive) }
-#     end
-#   end
-# else
-#   ceph_cluster_builder "add osd" do
-#     component "osd"
-#     osd_type "osdrive"
-#     action :add
-#     only_if { osd_allowed }
-#     notifies :run, 'ruby_block[save osd status]', :delayed
-#   end
-# end
-
 
 
 ruby_block 'save config_data' do

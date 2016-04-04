@@ -7,6 +7,11 @@
 
 include_recipe "ceph-cluster::default"
 
+yum_package "ceph-mon" do
+  action :upgrade
+  flush_cache [:before]
+end
+
 mons = node['ceph']['topology']['mons']
 if mons != nil
   gather_mons(node, mons)

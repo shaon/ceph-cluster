@@ -7,7 +7,7 @@
 
 include_recipe "ntp::default"
 
-%w{ceph ceph-radosgw xfsprogs hdparm parted}.each do |pkg|
+%w{ceph ceph-radosgw ceph-mon xfsprogs hdparm parted}.each do |pkg|
   yum_package pkg do
     action :upgrade
     flush_cache [:before]
