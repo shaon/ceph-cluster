@@ -7,9 +7,12 @@
 
 include_recipe "ceph-cluster::default"
 
-yum_package "ceph-mon" do
-  action :upgrade
-  flush_cache [:before]
+
+if node[:platform].include?("redhat")
+  yum_package "ceph-mon" do
+    action :install
+    version node['version']
+  end
 end
 
 mons = node['ceph']['topology']['mons']
@@ -40,14 +43,14 @@ template "#{client_admin_keyring}" do
   only_if { admin_secret }
 end
 
-execute 'Create Mon keyring' do
+execute "Create Mon keyring" do
   command "ceph-authtool --create-keyring #{keyring} --gen-key -n mon. --cap mon 'allow *'"
   creates keyring
   not_if { mon_secret }
   notifies :create, 'ruby_block[save mon_secret]', :delayed
 end
 
-ruby_block 'save mon_secret' do
+ruby_block "save mon_secret" do
   block do
     fetch = Mixlib::ShellOut.new("ceph-authtool '#{keyring}' --print-key --name=mon.")
     fetch.run_command
@@ -114,7 +117,7 @@ ruby_block 'save osd bootstrap-keyring' do
     node.save
   end
   not_if { osd_secret }
-  action :nothing
+  # action :nothing
 end
 
 service "ceph" do
