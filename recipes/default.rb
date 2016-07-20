@@ -7,11 +7,28 @@
 
 include_recipe "ntp::default"
 
-%w{ceph ceph-radosgw ceph-mon xfsprogs hdparm parted}.each do |pkg|
+yum_repository "ceph" do
+  description "Ceph Repository"
+  baseurl node['ceph']['baseurl']
+  gpgcheck false
+  action :create
+end
+
+%w{xfsprogs hdparm parted}.each do |pkg|
   yum_package pkg do
-    action :upgrade
+    action :install
     flush_cache [:before]
   end
+end
+
+yum_package "ceph" do
+  version node['version']
+  action :install
+end
+
+yum_package "ceph-radosgw" do
+  version node['version']
+  action :install
 end
 
 # temporary
