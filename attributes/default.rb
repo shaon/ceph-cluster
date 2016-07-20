@@ -7,6 +7,10 @@ default['ceph']['config']['initial_host'] = []
 default['ceph']['config']['mons'] = {}
 default['ceph']['users'] = {}
 
+# Repository
+default['ceph']['baseurl'] = "http://download.ceph.com/rpm-hammer/el7/x86_64/"
+default['ceph']['version'] = "0.94.6-0.el7"
+
 default['ceph']['config']['mon_port'] = 6789
 default["ceph"]["config"]["auth_cluster_required"] = "cephx"
 default["ceph"]["config"]["auth_service_required"] = "cephx"

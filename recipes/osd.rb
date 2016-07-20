@@ -7,9 +7,11 @@
 
 include_recipe "ceph-cluster::default"
 
-yum_package "ceph-osd" do
-  action :upgrade
-  flush_cache [:before]
+if node[:platform].include?("redhat")
+  yum_package "ceph-osd" do
+    action :install
+    version node['version']
+  end
 end
 
 mons = node['ceph']['topology']['mons']
